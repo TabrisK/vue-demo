@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html style="width: 100%; height: 100%; overflow: hidden">
+
+<head>
+  <meta charset="utf-8">
+  <title>Vue Example</title>
+  <link rel="stylesheet" href="css/base.css" />
+</head>
+
+<body>
+  <h1>Vue Example</h1>
+  <div id="container">
+    Demo is still loading.
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.24/browser.min.js"></script> -->
+  <script type="text/javascript">
+    var dotStyle = {
+      position: 'absolute',
+      background: '#61dafb',
+      font: 'normal 15px sans-serif',
+      textAlign: 'center',
+      cursor: 'pointer',
+    };
+
+    Vue.component("Dot", {
+      props: ["x", "y", "size"],
+      data: function () {
+        return {
+          style: {
+            ...dotStyle,
+            width: this.size * 1.3 + 'px',
+            height: this.size * 1.3 + 'px',
+            left: (this.x) + 'px',
+            top: (this.y) + 'px',
+            borderRadius: (this.size * 1.3 / 2) + 'px',
+            lineHeight: (this.size * 1.3) + 'px',
+          },
+          hover: false
+        };
+      },
+      template: `
+      <div :style="[style, {background: hover ? '#ff0' : style.background}]"
+        @mouseenter="hover = true" @mouseleave="hover = false">
+        {{hover ? "*" + $slots.default[0].text.trim() + "*" : $slots.default[0].text.trim()}}
+      </div>`
+    });
+
+    Vue.component("SierpinskiTriangle", {
+      props: {
+        "x": Number,
+        "y": Number,
+        "s": Number
+      },
+      data: function () {
+        return Object.freeze({
+          targetSize: 25,
+          nextS: this.s / 2
+        });
+      },
+      beforeUpdate: function () {
+        var slowDown = true;
+        if (slowDown) {
+          var e = performance.now() + 0.8;
+          while (performance.now() < e) {
+            // Artificially long execution time.
+          }
+        }
+      },
+      template: `
+        <div v-if="s <= targetSize">
+          <Dot
+            :x="x - (targetSize / 2)"
+            :y="y - (targetSize / 2)"
+            :size="targetSize"
+          >
+            <slot></slot>
+          </Dot>
+        </div>
+        <div v-else>
+          <SierpinskiTriangle :x="x" :y="y - (nextS / 2)" :s="nextS">
+            <slot></slot>
+          </SierpinskiTriangle>
+          <SierpinskiTriangle :x="x - nextS" :y="y + (nextS / 2)" :s="nextS">
+            <slot></slot>
+          </SierpinskiTriangle>
+          <SierpinskiTriangle :x="x + nextS" :y="y + (nextS / 2)" :s="nextS">
+            <slot></slot>
+           </SierpinskiTriangle>
+        </div>`
+
+    });
+
+    Vue.component("ExampleApplication", {
+      props: ["elapsed"],
+      data: function () {
+        return {
+          containerStyle: Object.freeze({
+            position: 'absolute',
+            transformOrigin: '0 0',
+            left: '50%',
+            top: '50%',
+            width: '10px',
+            height: '10px',
+            background: '#eee',
+          }),
+          seconds: 0,
+        };
+      },
+      computed: {
+        transformStyle: function () {
+          const t = (this.elapsed / 1000) % 10;
+          const scale = 1 + (t > 5 ? 10 - t : t) / 10;
+
+          return {
+            transform: 'scaleX(' + (scale / 2.1) + ') scaleY(0.7) translateZ(0.1px)'
+          };
+        }
+      },
+      mounted: function () {
+        var vm = this;
+        window.setInterval(function () {
+          vm.seconds = (vm.seconds % 10) + 1;
+        }, 1000);
+      },
+      template: `
+      <div :style="[containerStyle, transformStyle]">
+        <div>
+          <SierpinskiTriangle :x="0" :y="0" :s="1000">
+            {{seconds}}
+          </SierpinskiTriangle>
+        </div>
+      </div>`
+
+    });
+
+    var start = new Date().getTime();
+    var app = new Vue(
+      {
+        el: "#container",
+        data: {
+          elapsed: new Date().getTime() - start
+        },
+        mounted: function () {
+          var vm = this;
+          function update() {
+            vm.elapsed = new Date().getTime() - start;
+            window.requestAnimationFrame(update);
+          }
+          window.requestAnimationFrame(update);
+        },
+        template: `<ExampleApplication :elapsed='elapsed'/>`
+      }
+    );
+  </script>
+</body>
+
+</html>
